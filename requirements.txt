@@ -1,0 +1,12 @@
+# Ghim phien ban sau khi chay `pip freeze` tren may ban (xem huong dan). Duoi day la khung ban dau.
+polars
+pyarrow
+pandas
+duckdb
+scikit-learn
+matplotlib
+requests
+tqdm
+psutil
+pytest
+pyspark
