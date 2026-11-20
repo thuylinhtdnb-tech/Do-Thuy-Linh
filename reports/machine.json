@@ -1,0 +1,8 @@
+{
+  "platform": "Windows-10-10.0.19045-SP0",
+  "processor": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
+  "cpu_count": 8,
+  "python": "3.15.2",
+  "polars": "2.1.0",
+  "ram_gb": 17.0
+}
