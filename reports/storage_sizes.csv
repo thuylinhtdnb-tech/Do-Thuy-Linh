@@ -1,0 +1,6 @@
+layout,size_mb,compression_vs_csv
+csv,355.3,1.0
+parquet_snappy,175.7,2.02
+parquet_zstd,130.6,2.72
+parquet_zstd_by_year,132.1,2.69
+raw_per_quarter_parquet(download),133.9,2.65

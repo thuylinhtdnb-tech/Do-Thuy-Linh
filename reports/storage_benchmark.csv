@@ -1,0 +1,13 @@
+test,layout,seconds_median,speedup_vs_csv
+full_read_all_columns,csv,1.02,1.0
+full_read_all_columns,parquet_snappy,0.218,4.68
+full_read_all_columns,parquet_zstd,0.328,3.11
+full_read_all_columns,parquet_zstd_by_year,0.316,3.23
+read_5_columns,csv,0.456,1.0
+read_5_columns,parquet_snappy,0.035,13.03
+read_5_columns,parquet_zstd,0.053,8.6
+read_5_columns,parquet_zstd_by_year,0.064,7.12
+filter_year_2008,csv,0.984,1.0
+filter_year_2008,parquet_snappy,0.016,61.5
+filter_year_2008,parquet_zstd,0.022,44.73
+filter_year_2008,parquet_zstd_by_year,0.048,20.5
