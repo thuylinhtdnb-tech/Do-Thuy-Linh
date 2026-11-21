@@ -1,0 +1,14 @@
+feature,n_both_non_null,null_mismatch,max_abs_diff,max_rel_diff
+(row count polars / pandas / joined),1682569,1682569,1682569.0,
+eq_ratio,1678429,0,0.0,0.0
+npl_ratio,1661001,0,0.0,0.0
+reserve_to_npl,1528183,0,0.0,0.0
+loan_to_dep,1670427,0,0.0,0.0
+bro_to_dep,1653771,0,0.0,0.0
+log_asset,1682569,0,0.0,0.0
+asset_growth_yoy,1587640,0,0.0,0.0
+loan_growth_yoy,1570346,0,0.0,0.0
+d_npl_4q,1567152,0,0.0,0.0
+roa_mean4,1611046,0,2.220446049250313e-15,2.220446049250313e-15
+roa_std4,1611046,0,1.5237302583618134e-7,1.5237302583618134e-7
+eq_ratio_rel,1678429,0,0.0,0.0

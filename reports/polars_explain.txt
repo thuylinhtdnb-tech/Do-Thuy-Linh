@@ -1,0 +1,45 @@
+== NON-OPTIMIZED PLAN ==
+SELECT [col("CERT"), col("REPDTE"), col("year"), col("eq_ratio"), col("npl_ratio"), col("reserve_to_npl"), col("loan_to_dep"), col("bro_to_dep"), col("log_asset"), col("asset_growth_yoy"), col("loan_growth_yoy"), col("d_npl_4q"), col("roa_mean4"), col("roa_std4"), col("eq_ratio_rel")]
+   WITH_COLUMNS:
+   [when(((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4) & (col("ASSET").shift([dyn int: 4]).over([col("CERT")]) > 0.0)).then((col("ASSET") / col("ASSET").shift([dyn int: 4]).over([col("CERT")])) - 1.0).otherwise(null.cast(Float64)).alias("asset_growth_yoy"), when(((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4) & (col("LNLSGR").shift([dyn int: 4]).over([col("CERT")]) > 0.0)).then((col("LNLSGR") / col("LNLSGR").shift([dyn int: 4]).over([col("CERT")])) - 1.0).otherwise(null.cast(Float64)).alias("loan_growth_yoy"), when((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4).then(col("npl_ratio") - col("npl_ratio").shift([dyn int: 4]).over([col("CERT")])).otherwise(null.cast(Float64)).alias("d_npl_4q"), col("ROA").rolling_mean().over([col("CERT")]).alias("roa_mean4"), col("ROA").rolling_std().over([col("CERT")]).alias("roa_std4"), (col("eq_ratio") - col("eq_ratio").median().over([col("REPDTE")])).alias("eq_ratio_rel")] 
+     WITH_COLUMNS:
+     [((col("EQ") / col("ASSET")) * 100.0).alias("eq_ratio"), when(col("LNLSGR") > 0.0).then((col("NCLNLS") / col("LNLSGR")) * 100.0).otherwise(null.cast(Float64)).alias("npl_ratio"), when(col("NCLNLS") > 0.0).then(col("LNATRES") / col("NCLNLS")).otherwise(null.cast(Float64)).alias("reserve_to_npl"), when(col("DEP") > 0.0).then(col("LNLSGR") / col("DEP")).otherwise(null.cast(Float64)).alias("loan_to_dep"), when(col("DEP") > 0.0).then(col("BRO") / col("DEP")).otherwise(null.cast(Float64)).alias("bro_to_dep"), col("ASSET").log([dyn float: 2.718281828459045]).alias("log_asset")] 
+      SORT BY [col("CERT"), col("REPDTE")]
+        Parquet SCAN [C:/Users/Admin/Documents/GitHub/Do-Thuy-Linh/data/curated/panel.parquet]
+        PROJECT */36 COLUMNS
+        ESTIMATED ROWS: 1682569
+
+== OPTIMIZED PLAN ==
+simple π 15/15 ["CERT", "REPDTE", "year", ... 12 other columns]
+   WITH_COLUMNS:
+   [when(((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4) & (col("ASSET").shift([dyn int: 4]).over([col("CERT")]) > 0.0)).then((col("ASSET") / col("ASSET").shift([dyn int: 4]).over([col("CERT")])) - 1.0).otherwise(null.cast(Float64)).alias("asset_growth_yoy"), when(((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4) & (col("LNLSGR").shift([dyn int: 4]).over([col("CERT")]) > 0.0)).then((col("LNLSGR") / col("LNLSGR").shift([dyn int: 4]).over([col("CERT")])) - 1.0).otherwise(null.cast(Float64)).alias("loan_growth_yoy"), when((col("qidx") - col("qidx").shift([dyn int: 4]).over([col("CERT")])) == 4).then(col("npl_ratio") - col("npl_ratio").shift([dyn int: 4]).over([col("CERT")])).otherwise(null.cast(Float64)).alias("d_npl_4q"), col("ROA").rolling_mean().over([col("CERT")]).alias("roa_mean4"), col("ROA").rolling_std().over([col("CERT")]).alias("roa_std4"), (col("eq_ratio") - col("eq_ratio").median().over([col("REPDTE")])).alias("eq_ratio_rel")] 
+    simple π 13/13 ["CERT", "REPDTE", "year", ... 10 other columns]
+      simple π 18/18 ["CERT", "REPDTE", "year", ... 15 other columns]
+         WITH_COLUMNS:
+         [((col("EQ") / col("ASSET")) * 100.0).alias("eq_ratio"), when(col("LNLSGR") > 0.0).then((col("NCLNLS") / col("LNLSGR")) * 100.0).otherwise(null.cast(Float64)).alias("npl_ratio"), when(col("NCLNLS") > 0.0).then(col("LNATRES") / col("NCLNLS")).otherwise(null.cast(Float64)).alias("reserve_to_npl"), when(col("__POLARS_CSER_0x100000010")).then(col("LNLSGR") / col("DEP")).otherwise(null.cast(Float64)).alias("loan_to_dep"), when(col("__POLARS_CSER_0x100000010")).then(col("BRO") / col("DEP")).otherwise(null.cast(Float64)).alias("bro_to_dep"), col("ASSET").log([dyn float: 2.718281828459045]).alias("log_asset")] 
+           WITH_COLUMNS:
+           [(col("DEP") > 0.0).alias("__POLARS_CSER_0x100000010")] 
+            SORT BY [col("CERT"), col("REPDTE")]
+              Parquet SCAN [C:/Users/Admin/Documents/GitHub/Do-Thuy-Linh/data/curated/panel.parquet]
+              PROJECT 12/36 COLUMNS
+              ESTIMATED ROWS: 1682569
+
+== STREAMING ENGINE PLAN ==
+simple π 15/15 ["CERT", "REPDTE", "year", ... 12 other columns]
+  simple π 19/19 ["CERT", "REPDTE", "year", ... 16 other columns]
+     WITH_COLUMNS:
+     [when(((col("qidx") - col("_POLARS_TMP_PLAN_1")) == 4) & (col("_POLARS_TMP_PLAN_0") > 0.0)).then((col("ASSET") / col("_POLARS_TMP_PLAN_0")) - 1.0).otherwise(null.cast(Float64)).alias("asset_growth_yoy"), when(((col("qidx") - col("_POLARS_TMP_PLAN_1")) == 4) & (col("_POLARS_TMP_PLAN_2") > 0.0)).then((col("LNLSGR") / col("_POLARS_TMP_PLAN_2")) - 1.0).otherwise(null.cast(Float64)).alias("loan_growth_yoy"), when((col("qidx") - col("_POLARS_TMP_PLAN_1")) == 4).then(col("npl_ratio") - col("_POLARS_TMP_PLAN_3")).otherwise(null.cast(Float64)).alias("d_npl_4q"), col("_POLARS_TMP_PLAN_4").alias("roa_mean4"), col("_POLARS_TMP_PLAN_5").alias("roa_std4"), (col("eq_ratio") - col("_POLARS_TMP_PLAN_6")).alias("eq_ratio_rel")] 
+      WINDOW[maintain_order: true, ordered_eval: false] PARTITION BY ["REPDTE"]:
+       [col("eq_ratio").median().over([col("REPDTE")]).alias("_POLARS_TMP_PLAN_6")] 
+        WINDOW[maintain_order: true, ordered_eval: true] PARTITION BY ["CERT"]:
+         [col("ASSET").shift([dyn int: 4]).over([col("CERT")]).alias("_POLARS_TMP_PLAN_0"), col("qidx").shift([dyn int: 4]).over([col("CERT")]).alias("_POLARS_TMP_PLAN_1"), col("LNLSGR").shift([dyn int: 4]).over([col("CERT")]).alias("_POLARS_TMP_PLAN_2"), col("npl_ratio").shift([dyn int: 4]).over([col("CERT")]).alias("_POLARS_TMP_PLAN_3"), col("ROA").rolling_mean().over([col("CERT")]).alias("_POLARS_TMP_PLAN_4"), col("ROA").rolling_std().over([col("CERT")]).alias("_POLARS_TMP_PLAN_5")] 
+          simple π 13/13 ["CERT", "REPDTE", "year", ... 10 other columns]
+            simple π 18/18 ["CERT", "REPDTE", "year", ... 15 other columns]
+               WITH_COLUMNS:
+               [((col("EQ") / col("ASSET")) * 100.0).alias("eq_ratio"), when(col("LNLSGR") > 0.0).then((col("NCLNLS") / col("LNLSGR")) * 100.0).otherwise(null.cast(Float64)).alias("npl_ratio"), when(col("NCLNLS") > 0.0).then(col("LNATRES") / col("NCLNLS")).otherwise(null.cast(Float64)).alias("reserve_to_npl"), when(col("__POLARS_CSER_0x100000010")).then(col("LNLSGR") / col("DEP")).otherwise(null.cast(Float64)).alias("loan_to_dep"), when(col("__POLARS_CSER_0x100000010")).then(col("BRO") / col("DEP")).otherwise(null.cast(Float64)).alias("bro_to_dep"), col("ASSET").log([dyn float: 2.718281828459045]).alias("log_asset")] 
+                 WITH_COLUMNS:
+                 [(col("DEP") > 0.0).alias("__POLARS_CSER_0x100000010")] 
+                  SORT BY [col("CERT"), col("REPDTE")]
+                    Parquet SCAN [C:/Users/Admin/Documents/GitHub/Do-Thuy-Linh/data/curated/panel.parquet]
+                    PROJECT 12/36 COLUMNS
+                    ESTIMATED ROWS: 1682569

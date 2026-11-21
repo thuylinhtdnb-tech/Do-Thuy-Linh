@@ -1,0 +1,6 @@
+engine,scale,rows,repeats,median_s,min_s,peak_mb,baseline_mb,threads
+pandas,1,1682569,3,3.135,2.796,836.1,46.3,8
+polars_eager_all_cols,1,1682569,3,0.841,0.792,1607.3,46.5,8
+polars_eager,1,1682569,3,0.556,0.529,1043.1,46.3,8
+polars_lazy,1,1682569,3,0.54,0.509,1059.4,46.5,8
+polars_streaming,1,1682569,3,0.503,0.493,1145.7,46.5,8

@@ -1,0 +1,5 @@
+engine,scale,rows,repeats,median_s,min_s,peak_mb,baseline_mb,threads
+polars_lazy,1,1682569,3,1.618,1.57,694.4,46.3,1
+polars_lazy,1,1682569,3,0.976,0.942,891.6,46.5,2
+polars_lazy,1,1682569,3,0.63,0.616,989.0,46.4,4
+polars_lazy,1,1682569,3,0.551,0.508,1032.4,46.6,8
