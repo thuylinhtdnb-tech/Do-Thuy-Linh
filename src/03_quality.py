@@ -26,13 +26,16 @@ def p(t):
     md.append(t + "\n")
 
 
-def fmt(x):
+PLAIN_COLS = ("year", "first_year_<50%_null")  # cot nam: khong dung dau phay ngan cach
+
+
+def fmt(x, plain=False):
     if x is None:
         return ""
     if isinstance(x, float):
         return f"{x:,.3f}"
     if isinstance(x, int):
-        return f"{x:,}"
+        return str(x) if plain else f"{x:,}"
     return str(x)
 
 
@@ -40,7 +43,7 @@ def table(df, n=40):
     d = df.head(n)
     lines = ["| " + " | ".join(d.columns) + " |", "|" + "---|" * len(d.columns)]
     for r in d.rows():
-        lines.append("| " + " | ".join(fmt(x) for x in r) + " |")
+        lines.append("| " + " | ".join(fmt(x, c in PLAIN_COLS) for x, c in zip(r, d.columns)) + " |")
     md.append("\n".join(lines) + "\n")
 
 
