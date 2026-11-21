@@ -1,0 +1,92 @@
+== Physical Plan ==
+AdaptiveSparkPlan (16)
++- Sort (15)
+   +- Exchange (14)
+      +- HashAggregate (13)
+         +- Exchange (12)
+            +- HashAggregate (11)
+               +- Project (10)
+                  +- Window (9)
+                     +- Sort (8)
+                        +- Exchange (7)
+                           +- Project (6)
+                              +- Window (5)
+                                 +- Sort (4)
+                                    +- Exchange (3)
+                                       +- Project (2)
+                                          +- Scan parquet  (1)
+
+
+(1) Scan parquet 
+Output [12]: [CERT#0, REPDTE#1, year#2, qidx#3, LNATRES#7, ROA#8, ASSET#11, LNLSGR#13, EQ#17, DEP#18, NCLNLS#20, BRO#26]
+Batched: true
+Location: InMemoryFileIndex [file:/content/panel.parquet]
+ReadSchema: struct<CERT:int,REPDTE:date,year:int,qidx:int,LNATRES:double,ROA:double,ASSET:double,LNLSGR:double,EQ:double,DEP:double,NCLNLS:double,BRO:double>
+
+(2) Project
+Output [13]: [CERT#0, REPDTE#1, year#2, qidx#3, ASSET#11, ROA#8, LNLSGR#13, ((EQ#17 / ASSET#11) * 100.0) AS eq_ratio#37, CASE WHEN (LNLSGR#13 > 0.0) THEN ((NCLNLS#20 / LNLSGR#13) * 100.0) END AS npl_ratio#38, CASE WHEN (NCLNLS#20 > 0.0) THEN (LNATRES#7 / NCLNLS#20) END AS reserve_to_npl#39, CASE WHEN (DEP#18 > 0.0) THEN (LNLSGR#13 / DEP#18) END AS loan_to_dep#40, CASE WHEN (DEP#18 > 0.0) THEN (BRO#26 / DEP#18) END AS bro_to_dep#41, ln(ASSET#11) AS log_asset#42]
+Input [12]: [CERT#0, REPDTE#1, year#2, qidx#3, LNATRES#7, ROA#8, ASSET#11, LNLSGR#13, EQ#17, DEP#18, NCLNLS#20, BRO#26]
+
+(3) Exchange
+Input [13]: [CERT#0, REPDTE#1, year#2, qidx#3, ASSET#11, ROA#8, LNLSGR#13, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42]
+Arguments: hashpartitioning(CERT#0, 8), ENSURE_REQUIREMENTS, [plan_id=33]
+
+(4) Sort
+Input [13]: [CERT#0, REPDTE#1, year#2, qidx#3, ASSET#11, ROA#8, LNLSGR#13, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42]
+Arguments: [CERT#0 ASC NULLS FIRST, REPDTE#1 ASC NULLS FIRST], false, 0
+
+(5) Window
+Input [13]: [CERT#0, REPDTE#1, year#2, qidx#3, ASSET#11, ROA#8, LNLSGR#13, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42]
+Arguments: [lag(qidx#3, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we0#44, lag(ASSET#11, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we1#45, lag(ASSET#11, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we2#46, lag(qidx#3, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we0#48, lag(LNLSGR#13, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we1#49, lag(LNLSGR#13, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we2#50, lag(qidx#3, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we0#52, lag(npl_ratio#38, -4, null) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -4, -4)) AS _we1#53, count(ROA#8) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -3, currentrow$())) AS _we0#57L, avg(ROA#8) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -3, currentrow$())) AS _we1#58, count(ROA#8) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -3, currentrow$())) AS _we0#70L, stddev_samp(ROA#8) windowspecdefinition(CERT#0, REPDTE#1 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -3, currentrow$())) AS _we1#71], [CERT#0], [REPDTE#1 ASC NULLS FIRST]
+
+(6) Project
+Output [13]: [REPDTE#1, year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, CASE WHEN (((qidx#3 - _we0#44) = 4) AND (_we1#45 > 0.0)) THEN ((ASSET#11 / _we2#46) - 1.0) END AS asset_growth_yoy#43, CASE WHEN (((qidx#3 - _we0#48) = 4) AND (_we1#49 > 0.0)) THEN ((LNLSGR#13 / _we2#50) - 1.0) END AS loan_growth_yoy#47, CASE WHEN ((qidx#3 - _we0#52) = 4) THEN (npl_ratio#38 - _we1#53) END AS d_npl_4q#51, CASE WHEN (_we0#57L = 4) THEN _we1#58 END AS roa_mean4#54, CASE WHEN (_we0#70L = 4) THEN _we1#71 END AS roa_std4#59]
+Input [25]: [CERT#0, REPDTE#1, year#2, qidx#3, ASSET#11, ROA#8, LNLSGR#13, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, _we0#44, _we1#45, _we2#46, _we0#48, _we1#49, _we2#50, _we0#52, _we1#53, _we0#57L, _we1#58, _we0#70L, _we1#71]
+
+(7) Exchange
+Input [13]: [REPDTE#1, year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59]
+Arguments: hashpartitioning(REPDTE#1, 8), ENSURE_REQUIREMENTS, [plan_id=38]
+
+(8) Sort
+Input [13]: [REPDTE#1, year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59]
+Arguments: [REPDTE#1 ASC NULLS FIRST], false, 0
+
+(9) Window
+Input [13]: [REPDTE#1, year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59]
+Arguments: [percentile(eq_ratio#37, 0.5, 1, 0, 0, false) windowspecdefinition(REPDTE#1, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS _we0#74], [REPDTE#1]
+
+(10) Project
+Output [13]: [year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59, (eq_ratio#37 - _we0#74) AS eq_ratio_rel#72]
+Input [14]: [REPDTE#1, year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59, _we0#74]
+
+(11) HashAggregate
+Input [13]: [year#2, eq_ratio#37, npl_ratio#38, reserve_to_npl#39, loan_to_dep#40, bro_to_dep#41, log_asset#42, asset_growth_yoy#43, loan_growth_yoy#47, d_npl_4q#51, roa_mean4#54, roa_std4#59, eq_ratio_rel#72]
+Keys [1]: [year#2]
+Functions [25]: [partial_count(1), partial_count(eq_ratio#37), partial_sum(eq_ratio#37), partial_count(npl_ratio#38), partial_sum(npl_ratio#38), partial_count(reserve_to_npl#39), partial_sum(reserve_to_npl#39), partial_count(loan_to_dep#40), partial_sum(loan_to_dep#40), partial_count(bro_to_dep#41), partial_sum(bro_to_dep#41), partial_count(log_asset#42), partial_sum(log_asset#42), partial_count(asset_growth_yoy#43), partial_sum(asset_growth_yoy#43), partial_count(loan_growth_yoy#47), partial_sum(loan_growth_yoy#47), partial_count(d_npl_4q#51), partial_sum(d_npl_4q#51), partial_count(roa_mean4#54), partial_sum(roa_mean4#54), partial_count(roa_std4#59), partial_sum(roa_std4#59), partial_count(eq_ratio_rel#72), partial_sum(eq_ratio_rel#72)]
+Aggregate Attributes [25]: [count#140L, count#141L, sum#142, count#143L, sum#144, count#145L, sum#146, count#147L, sum#148, count#149L, sum#150, count#151L, sum#152, count#153L, sum#154, count#155L, sum#156, count#157L, sum#158, count#159L, sum#160, count#161L, sum#162, count#163L, sum#164]
+Results [26]: [year#2, count#165L, count#166L, sum#167, count#168L, sum#169, count#170L, sum#171, count#172L, sum#173, count#174L, sum#175, count#176L, sum#177, count#178L, sum#179, count#180L, sum#181, count#182L, sum#183, count#184L, sum#185, count#186L, sum#187, count#188L, sum#189]
+
+(12) Exchange
+Input [26]: [year#2, count#165L, count#166L, sum#167, count#168L, sum#169, count#170L, sum#171, count#172L, sum#173, count#174L, sum#175, count#176L, sum#177, count#178L, sum#179, count#180L, sum#181, count#182L, sum#183, count#184L, sum#185, count#186L, sum#187, count#188L, sum#189]
+Arguments: hashpartitioning(year#2, 8), ENSURE_REQUIREMENTS, [plan_id=44]
+
+(13) HashAggregate
+Input [26]: [year#2, count#165L, count#166L, sum#167, count#168L, sum#169, count#170L, sum#171, count#172L, sum#173, count#174L, sum#175, count#176L, sum#177, count#178L, sum#179, count#180L, sum#181, count#182L, sum#183, count#184L, sum#185, count#186L, sum#187, count#188L, sum#189]
+Keys [1]: [year#2]
+Functions [25]: [count(1), count(eq_ratio#37), sum(eq_ratio#37), count(npl_ratio#38), sum(npl_ratio#38), count(reserve_to_npl#39), sum(reserve_to_npl#39), count(loan_to_dep#40), sum(loan_to_dep#40), count(bro_to_dep#41), sum(bro_to_dep#41), count(log_asset#42), sum(log_asset#42), count(asset_growth_yoy#43), sum(asset_growth_yoy#43), count(loan_growth_yoy#47), sum(loan_growth_yoy#47), count(d_npl_4q#51), sum(d_npl_4q#51), count(roa_mean4#54), sum(roa_mean4#54), count(roa_std4#59), sum(roa_std4#59), count(eq_ratio_rel#72), sum(eq_ratio_rel#72)]
+Aggregate Attributes [25]: [count(1)#115L, count(eq_ratio#37)#116L, sum(eq_ratio#37)#117, count(npl_ratio#38)#118L, sum(npl_ratio#38)#119, count(reserve_to_npl#39)#120L, sum(reserve_to_npl#39)#121, count(loan_to_dep#40)#122L, sum(loan_to_dep#40)#123, count(bro_to_dep#41)#124L, sum(bro_to_dep#41)#125, count(log_asset#42)#126L, sum(log_asset#42)#127, count(asset_growth_yoy#43)#128L, sum(asset_growth_yoy#43)#129, count(loan_growth_yoy#47)#130L, sum(loan_growth_yoy#47)#131, count(d_npl_4q#51)#132L, sum(d_npl_4q#51)#133, count(roa_mean4#54)#134L, sum(roa_mean4#54)#135, count(roa_std4#59)#136L, sum(roa_std4#59)#137, count(eq_ratio_rel#72)#138L, sum(eq_ratio_rel#72)#139]
+Results [26]: [year#2, count(1)#115L AS rows#75L, count(eq_ratio#37)#116L AS eq_ratio__n#76L, sum(eq_ratio#37)#117 AS eq_ratio__sum#77, count(npl_ratio#38)#118L AS npl_ratio__n#78L, sum(npl_ratio#38)#119 AS npl_ratio__sum#79, count(reserve_to_npl#39)#120L AS reserve_to_npl__n#80L, sum(reserve_to_npl#39)#121 AS reserve_to_npl__sum#81, count(loan_to_dep#40)#122L AS loan_to_dep__n#82L, sum(loan_to_dep#40)#123 AS loan_to_dep__sum#83, count(bro_to_dep#41)#124L AS bro_to_dep__n#84L, sum(bro_to_dep#41)#125 AS bro_to_dep__sum#85, count(log_asset#42)#126L AS log_asset__n#86L, sum(log_asset#42)#127 AS log_asset__sum#87, count(asset_growth_yoy#43)#128L AS asset_growth_yoy__n#88L, sum(asset_growth_yoy#43)#129 AS asset_growth_yoy__sum#89, count(loan_growth_yoy#47)#130L AS loan_growth_yoy__n#90L, sum(loan_growth_yoy#47)#131 AS loan_growth_yoy__sum#91, count(d_npl_4q#51)#132L AS d_npl_4q__n#92L, sum(d_npl_4q#51)#133 AS d_npl_4q__sum#93, count(roa_mean4#54)#134L AS roa_mean4__n#94L, sum(roa_mean4#54)#135 AS roa_mean4__sum#95, count(roa_std4#59)#136L AS roa_std4__n#96L, sum(roa_std4#59)#137 AS roa_std4__sum#97, count(eq_ratio_rel#72)#138L AS eq_ratio_rel__n#98L, sum(eq_ratio_rel#72)#139 AS eq_ratio_rel__sum#99]
+
+(14) Exchange
+Input [26]: [year#2, rows#75L, eq_ratio__n#76L, eq_ratio__sum#77, npl_ratio__n#78L, npl_ratio__sum#79, reserve_to_npl__n#80L, reserve_to_npl__sum#81, loan_to_dep__n#82L, loan_to_dep__sum#83, bro_to_dep__n#84L, bro_to_dep__sum#85, log_asset__n#86L, log_asset__sum#87, asset_growth_yoy__n#88L, asset_growth_yoy__sum#89, loan_growth_yoy__n#90L, loan_growth_yoy__sum#91, d_npl_4q__n#92L, d_npl_4q__sum#93, roa_mean4__n#94L, roa_mean4__sum#95, roa_std4__n#96L, roa_std4__sum#97, eq_ratio_rel__n#98L, eq_ratio_rel__sum#99]
+Arguments: rangepartitioning(year#2 ASC NULLS FIRST, 8), ENSURE_REQUIREMENTS, [plan_id=47]
+
+(15) Sort
+Input [26]: [year#2, rows#75L, eq_ratio__n#76L, eq_ratio__sum#77, npl_ratio__n#78L, npl_ratio__sum#79, reserve_to_npl__n#80L, reserve_to_npl__sum#81, loan_to_dep__n#82L, loan_to_dep__sum#83, bro_to_dep__n#84L, bro_to_dep__sum#85, log_asset__n#86L, log_asset__sum#87, asset_growth_yoy__n#88L, asset_growth_yoy__sum#89, loan_growth_yoy__n#90L, loan_growth_yoy__sum#91, d_npl_4q__n#92L, d_npl_4q__sum#93, roa_mean4__n#94L, roa_mean4__sum#95, roa_std4__n#96L, roa_std4__sum#97, eq_ratio_rel__n#98L, eq_ratio_rel__sum#99]
+Arguments: [year#2 ASC NULLS FIRST], true, 0
+
+(16) AdaptiveSparkPlan
+Output [26]: [year#2, rows#75L, eq_ratio__n#76L, eq_ratio__sum#77, npl_ratio__n#78L, npl_ratio__sum#79, reserve_to_npl__n#80L, reserve_to_npl__sum#81, loan_to_dep__n#82L, loan_to_dep__sum#83, bro_to_dep__n#84L, bro_to_dep__sum#85, log_asset__n#86L, log_asset__sum#87, asset_growth_yoy__n#88L, asset_growth_yoy__sum#89, loan_growth_yoy__n#90L, loan_growth_yoy__sum#91, d_npl_4q__n#92L, d_npl_4q__sum#93, roa_mean4__n#94L, roa_mean4__sum#95, roa_std4__n#96L, roa_std4__sum#97, eq_ratio_rel__n#98L, eq_ratio_rel__sum#99]
+Arguments: isFinalPlan=false
+
+

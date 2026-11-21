@@ -1,0 +1,10 @@
+check,value
+years in Spark / Polars,43 / 43
+years missing in Polars,0
+count mismatches (rows and non-null counts),0
+max relative difference of yearly sums,2.227e-14
+sample rows only in Spark / only in Polars,0 / 0
+sample rows compared,33042
+sample null-pattern mismatches,0
+sample max relative difference,1.012e-15
+OVERALL (counts equal and yearly sums within 1e-6),MATCH
