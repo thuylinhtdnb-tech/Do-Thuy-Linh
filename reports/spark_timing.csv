@@ -1,2 +1,2 @@
-engine,median_s,min_s,spark_version,default_parallelism,shuffle_partitions
-pyspark_local,0.146,0.134,4.0.5,2,8
+engine,cold_first_run_s,median_s,min_s,spark_version,default_parallelism,shuffle_partitions
+pyspark_local,21.375,8.938,7.946,4.0.5,2,8

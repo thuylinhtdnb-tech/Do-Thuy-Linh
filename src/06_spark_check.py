@@ -65,11 +65,14 @@ def main():
              .config("spark.ui.enabled", "false").getOrCreate())
     spark.sparkContext.setLogLevel("ERROR")
 
-    feats = spark_features(spark.read.parquet(a.panel))
-    agg_exprs = [F.count(F.lit(1)).alias("rows")]
-    for f in FEATS:
-        agg_exprs += [F.count(f).alias(f"{f}__n"), F.sum(f).alias(f"{f}__sum")]
-    agg = feats.groupBy("year").agg(*agg_exprs).orderBy("year")
+    def build():
+        ft = spark_features(spark.read.parquet(a.panel))
+        exprs = [F.count(F.lit(1)).alias("rows")]
+        for f in FEATS:
+            exprs += [F.count(f).alias(f"{f}__n"), F.sum(f).alias(f"{f}__sum")]
+        return ft, ft.groupBy("year").agg(*exprs).orderBy("year")
+
+    feats, agg = build()
 
     # ---- Execution plan
     buf = io.StringIO()
@@ -78,18 +81,23 @@ def main():
     (out / "spark_explain.txt").write_text(buf.getvalue(), encoding="utf-8")
     print(buf.getvalue())
 
-    # ---- Thoi gian (1 lan khoi dong + median cua cac lan chay)
-    agg.collect()
+    # ---- Thoi gian: lan dau (gom khoi dong JVM/JIT) + cac lan sau, MOI LAN DUNG DataFrame MOI.
+    # (Chay lai action tren cung mot DataFrame co the dung lai file shuffle cua lan truoc -> thoi gian sai.)
+    t = time.perf_counter()
+    rows = [r.asDict() for r in agg.collect()]
+    cold = time.perf_counter() - t
     times = []
     for _ in range(a.repeats):
+        _, fresh = build()
         t = time.perf_counter()
-        rows = [r.asDict() for r in agg.collect()]
+        rows = [r.asDict() for r in fresh.collect()]
         times.append(time.perf_counter() - t)
     with open(out / "spark_timing.csv", "w", newline="") as fh:
         wr = csv.writer(fh)
-        wr.writerow(["engine", "median_s", "min_s", "spark_version", "default_parallelism", "shuffle_partitions"])
-        wr.writerow(["pyspark_local", round(statistics.median(times), 3), round(min(times), 3), spark.version,
-                     spark.sparkContext.defaultParallelism, 8])
+        wr.writerow(["engine", "cold_first_run_s", "median_s", "min_s", "spark_version",
+                     "default_parallelism", "shuffle_partitions"])
+        wr.writerow(["pyspark_local", round(cold, 3), round(statistics.median(times), 3), round(min(times), 3),
+                     spark.version, spark.sparkContext.defaultParallelism, 8])
 
     # ---- Doi chieu tong hop theo nam voi Polars
     pol = {int(r["year"]): r for r in csv.DictReader(open(a.checksums))}
