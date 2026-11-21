@@ -17,18 +17,18 @@
 | LNLSNET | 2 |
 
 
-## 2. Failure events: true failures vs assistance transactions
+## 2. Failures table events: closures vs events after which the bank keeps reporting
 
 Failures rows: 4,117; null CERT: 488.
 
 Rows before 1984-01-01 (outside the Call Report panel): 842
 
-Rule: an event is `assistance_survived` if the bank kept filing Call Reports more than 120 days after the event date (charter survived); otherwise `failure`.
+Rule: an event is `continued_reporting` if the bank kept filing Call Reports more than 120 days after the event date (surviving charter or reused CERT; ambiguous); otherwise `failure` (the bank's reporting series ends).
 
 | event_type | events |
 |---|---|
 | failure | 2,936 |
-| assistance_survived | 317 |
+| continued_reporting | 317 |
 | no_financials | 22 |
 
 
@@ -46,10 +46,10 @@ Rule: an event is `assistance_survived` if the bank kept filing Call Reports mor
 
 | value | event_type | events |
 |---|---|---|
-| ASSISTANCE | assistance_survived | 121 |
+| ASSISTANCE | continued_reporting | 121 |
 | ASSISTANCE | failure | 290 |
 | ASSISTANCE | no_financials | 1 |
-| FAILURE | assistance_survived | 196 |
+| FAILURE | continued_reporting | 196 |
 | FAILURE | failure | 2,646 |
 | FAILURE | no_financials | 21 |
 
@@ -58,31 +58,31 @@ Rule: an event is `assistance_survived` if the bank kept filing Call Reports mor
 
 | value | event_type | events |
 |---|---|---|
-| A/A | assistance_survived | 109 |
+| A/A | continued_reporting | 109 |
 | A/A | failure | 288 |
 | A/A | no_financials | 1 |
-| ABT | assistance_survived | 7 |
+| ABT | continued_reporting | 7 |
 | ABT | failure | 9 |
 | DINB | failure | 8 |
-| IDT | assistance_survived | 64 |
+| IDT | continued_reporting | 64 |
 | IDT | failure | 308 |
 | IDT | no_financials | 6 |
-| MGR | assistance_survived | 3 |
+| MGR | continued_reporting | 3 |
 | MGR | failure | 34 |
-| OBAM | assistance_survived | 12 |
+| OBAM | continued_reporting | 12 |
 | OBAM | failure | 1 |
-| PA | assistance_survived | 95 |
+| PA | continued_reporting | 95 |
 | PA | failure | 1,927 |
 | PA | no_financials | 13 |
-| PI | assistance_survived | 1 |
+| PI | continued_reporting | 1 |
 | PI | failure | 142 |
-| PO | assistance_survived | 26 |
+| PO | continued_reporting | 26 |
 | PO | failure | 218 |
 | PO | no_financials | 2 |
 | REP | failure | 1 |
 
 
-### True failures per year (clean count)
+### Closures per year (clean count)
 
 | year | failures |
 |---|---|
@@ -134,12 +134,13 @@ Rule: an event is `assistance_survived` if the bank kept filing Call Reports mor
 |---|---|
 | Bank-quarter rows in panel | 1,682,569 |
 | Rows with complete labels (<= 2025Q2) | 1,665,040 |
-| Rows flagged assist_4q (excluded) | 1,243 |
+| Rows flagged ambig_4q (excluded) | 1,243 |
 | Usable rows | 1,663,797 |
 | Positive rows (y=1) among usable | 11,252 |
 | Distinct failed banks among positives | 2,934 |
 | Positive rate (%) | 0.6763 |
 | Positives where failure precedes report availability | 1,161 |
+| Positive rows, strict definition (RESTYPE = FAILURE) | 10,130 |
 
 
 ### Positive rows and distinct failed banks by year of REPDTE (usable rows)
@@ -214,4 +215,4 @@ Rule: an event is `assistance_survived` if the bank kept filing Call Reports mor
 | 230 | 16 |
 | 470 | 1 |
 
-Banks with at least one assistance transaction: 314
+Banks with at least one continued-reporting event: 314

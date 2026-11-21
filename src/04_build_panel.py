@@ -6,12 +6,14 @@ Dau ra  : data/curated/panel.parquet, data/curated/bank_dim.parquet,
           reports/panel_summary.md, reports/failure_event_types.csv
 
 Quy tac chinh (xem bao cao Part 2):
-  * Bang Failures gom CA "failure" (dong cua) VA "assistance" (ngan hang van mo cua, giay phep con).
-    Ta phan biet bang du lieu: neu ngan hang con nop bao cao > SURVIVE_TOL_DAYS sau ngay su kien
-    -> assistance_survived (khong phai that bai).
-  * Nhan y = 1 neu that bai THAT (dong cua) roi vao (REPDTE, REPDTE + 1 nam].
-  * Cac dong nam trong cua so 4 quy truoc mot giao dich assistance bi danh dau assist_4q va
-    loai khoi tap dung de mo hinh hoa (usable = False): nhan cua chung la mo ho.
+  * Bang Failures gom ca su kien "FAILURE" va "ASSISTANCE" (cot RESTYPE). Ta phan loai moi su kien
+    bang chinh bang Call Report: neu ngan hang van nop bao cao > SURVIVE_TOL_DAYS sau ngay su kien
+    -> continued_reporting (mo ho: giay phep con song, hoac CERT duoc dung tiep sau su kien);
+    nguoc lai -> failure (chuoi bao cao cham dut).
+  * Nhan y_fail_4q = 1 neu su kien "failure" roi vao (REPDTE, REPDTE + 1 nam].
+    y_fail_4q_strict chi tinh cac su kien co RESTYPE == FAILURE (phan tich do nhay).
+  * Cac dong nam trong cua so 4 quy truoc mot su kien continued_reporting bi danh dau ambig_4q
+    va loai khoi tap dung de mo hinh hoa (usable = False): nhan cua chung la mo ho.
   * Sap nhap / dong cua tu nguyen: nhan 0 (khong phai that bai).
   * Dong co REPDTE >= ngay that bai bi bo (thong tin sau that bai).
   * Chi dung cac quy <= 2025Q2 (nhan day du).
@@ -31,7 +33,7 @@ OUT_MD = C.REPORTS / "panel_summary.md"
 LAST_LABEL_Q = date(2025, 6, 30)   # de bai: nhan sau moc nay chua day du
 HORIZON = "1y"                     # (q, q + 4 quy]
 AVAIL_LAG_DAYS = 45                # gia dinh: Call Report cong bo trong ~30-35 ngay sau cuoi quy
-SURVIVE_TOL_DAYS = 120             # con bao cao > 120 ngay sau su kien => giay phep con song
+SURVIVE_TOL_DAYS = 120             # con bao cao > 120 ngay sau su kien => khong phai dong cua
 MERGER_CODES = [221, 222, 223, 224, 225]   # ma sap nhap trong lich su FDIC (xem bao cao)
 
 md = []
@@ -117,7 +119,7 @@ def main():
     data_last = fin["REPDTE"].max()
 
     # ------------------------------------------------ 2. Failure events
-    h("2. Failure events: true failures vs assistance transactions")
+    h("2. Failures table events: closures vs events after which the bank keeps reporting")
     p(f"Failures rows: {failures.height:,}; null CERT: {failures['CERT'].null_count():,}.")
     f = failures.with_columns(pl.col("CERT").cast(pl.Int32, strict=False),
                               parse_date("FAILDATE").alias("fail_date"))
@@ -129,10 +131,11 @@ def main():
     ev = ev.with_columns(
         pl.when(pl.col("last_rep").is_null()).then(pl.lit("no_financials"))
         .when(pl.col("fail_date") < pl.col("first_rep")).then(pl.lit("before_first_report"))
-        .when(pl.col("gap_days") > SURVIVE_TOL_DAYS).then(pl.lit("assistance_survived"))
+        .when(pl.col("gap_days") > SURVIVE_TOL_DAYS).then(pl.lit("continued_reporting"))
         .otherwise(pl.lit("failure")).alias("event_type"))
-    p("Rule: an event is `assistance_survived` if the bank kept filing Call Reports more than "
-      f"{SURVIVE_TOL_DAYS} days after the event date (charter survived); otherwise `failure`.")
+    p("Rule: an event is `continued_reporting` if the bank kept filing Call Reports more than "
+      f"{SURVIVE_TOL_DAYS} days after the event date (surviving charter or reused CERT; ambiguous); "
+      "otherwise `failure` (the bank's reporting series ends).")
     table(ev.group_by("event_type").len().sort("len", descending=True).rename({"len": "events"}))
 
     h("Days between event date and the bank's last Call Report", 3)
@@ -159,18 +162,22 @@ def main():
         ev = ev.with_columns(pl.col("COST").cast(pl.Float64, strict=False).alias("cost_k"))
     else:
         ev = ev.with_columns(pl.lit(None, dtype=pl.Float64).alias("cost_k"))
+    if "RESTYPE" not in ev.columns:
+        ev = ev.with_columns(pl.lit(None, dtype=pl.Utf8).alias("RESTYPE"))
     closure = (ev.filter(pl.col("event_type") == "failure").sort("fail_date")
                .group_by("CERT", maintain_order=True)
-               .agg(pl.col("fail_date").first(), pl.col("cost_k").first(), pl.len().alias("n_failure_events")))
-    assist = ev.filter(pl.col("event_type") == "assistance_survived").select(
-        "CERT", pl.col("fail_date").alias("assist_date"))
-    h("True failures per year (clean count)", 3)
+               .agg(pl.col("fail_date").first(), pl.col("cost_k").first(),
+                    pl.col("RESTYPE").cast(pl.Utf8).str.to_uppercase().first().alias("fail_restype"),
+                    pl.len().alias("n_failure_events")))
+    ambig = ev.filter(pl.col("event_type") == "continued_reporting").select(
+        "CERT", pl.col("fail_date").alias("ambig_date"))
+    h("Closures per year (clean count)", 3)
     table(closure.group_by(pl.col("fail_date").dt.year().alias("year")).len()
           .sort("year").rename({"len": "failures"}), n=60, plain=("year",))
 
     # ------------------------------------------------ 3. Panel + labels
     h("3. Bank-quarter panel and labels")
-    panel = fin.join(closure.select(["CERT", "fail_date"]), on="CERT", how="left")
+    panel = fin.join(closure.select(["CERT", "fail_date", "fail_restype"]), on="CERT", how="left")
     after = (pl.col("fail_date").is_not_null() & (pl.col("REPDTE") >= pl.col("fail_date"))).fill_null(False)
     n_after = panel.filter(after).height
     panel = panel.filter(~after)
@@ -181,19 +188,22 @@ def main():
         .fill_null(False).cast(pl.Int8).alias("y_fail_4q"),
         (pl.col("fail_date") - pl.col("REPDTE")).dt.total_days().alias("days_to_fail"),
     ).with_columns(
-        ((pl.col("y_fail_4q") == 1) & (pl.col("fail_date") <= pl.col("avail_date"))).alias("fail_lt_avail"))
+        ((pl.col("y_fail_4q") == 1) & (pl.col("fail_date") <= pl.col("avail_date"))).alias("fail_lt_avail"),
+        ((pl.col("y_fail_4q") == 1) & (pl.col("fail_restype") == "FAILURE")).cast(pl.Int8).alias("y_fail_4q_strict"),
+    )
 
-    flag = (panel.select(["CERT", "REPDTE"]).join(assist, on="CERT", how="inner")
-            .filter((pl.col("assist_date") > pl.col("REPDTE"))
-                    & (pl.col("assist_date") <= pl.col("REPDTE").dt.offset_by(HORIZON)))
-            .select(["CERT", "REPDTE"]).unique().with_columns(pl.lit(True).alias("assist_4q")))
+    flag = (panel.select(["CERT", "REPDTE"]).join(ambig, on="CERT", how="inner")
+            .filter((pl.col("ambig_date") > pl.col("REPDTE"))
+                    & (pl.col("ambig_date") <= pl.col("REPDTE").dt.offset_by(HORIZON)))
+            .select(["CERT", "REPDTE"]).unique().with_columns(pl.lit(True).alias("ambig_4q")))
     panel = (panel.join(flag, on=["CERT", "REPDTE"], how="left")
-             .with_columns(pl.col("assist_4q").fill_null(False),
+             .with_columns(pl.col("ambig_4q").fill_null(False),
                            (pl.col("REPDTE") <= LAST_LABEL_Q).alias("label_complete"))
-             .with_columns((pl.col("label_complete") & ~pl.col("assist_4q")).alias("usable")))
+             .with_columns((pl.col("label_complete") & ~pl.col("ambig_4q")).alias("usable")))
 
     base = ["CERT", "REPDTE", "year", "qidx", "avail_date"]
-    extra = ["fail_date", "days_to_fail", "y_fail_4q", "fail_lt_avail", "assist_4q", "label_complete", "usable"]
+    extra = ["fail_date", "fail_restype", "days_to_fail", "y_fail_4q", "y_fail_4q_strict", "fail_lt_avail",
+             "ambig_4q", "label_complete", "usable"]
     vals = [c for c in fin.columns if c not in base]
     panel = panel.select(base + vals + extra).sort(["CERT", "REPDTE"])
     assert panel.select(["CERT", "REPDTE"]).unique().height == panel.height, "duplicate keys"
@@ -204,14 +214,15 @@ def main():
     pos = u.filter(pl.col("y_fail_4q") == 1)
     table(pl.DataFrame({
         "metric": ["Bank-quarter rows in panel", "Rows with complete labels (<= 2025Q2)",
-                   "Rows flagged assist_4q (excluded)", "Usable rows", "Positive rows (y=1) among usable",
+                   "Rows flagged ambig_4q (excluded)", "Usable rows", "Positive rows (y=1) among usable",
                    "Distinct failed banks among positives", "Positive rate (%)",
-                   "Positives where failure precedes report availability"],
+                   "Positives where failure precedes report availability",
+                   "Positive rows, strict definition (RESTYPE = FAILURE)"],
         "value": [f"{v:,}" if isinstance(v, int) else f"{v:.4f}" for v in [
             panel.height, panel.filter(pl.col("label_complete")).height,
-            panel.filter(pl.col("assist_4q") & pl.col("label_complete")).height, u.height, pos.height,
+            panel.filter(pl.col("ambig_4q") & pl.col("label_complete")).height, u.height, pos.height,
             pos["CERT"].n_unique(), 100 * pos.height / max(u.height, 1),
-            pos.filter(pl.col("fail_lt_avail")).height]],
+            pos.filter(pl.col("fail_lt_avail")).height, int(u["y_fail_4q_strict"].sum())]],
     }))
     h("Positive rows and distinct failed banks by year of REPDTE (usable rows)", 3)
     table(u.group_by("year").agg(pl.len().alias("rows"), pl.col("y_fail_4q").sum().alias("positive_rows"),
@@ -225,9 +236,9 @@ def main():
         pl.col("CHANGEC1").cast(pl.Float64, strict=False).cast(pl.Int32, strict=False).alias("change_code")
         if "CHANGEC1" in inst.columns else pl.lit(None, dtype=pl.Int32).alias("change_code"),
     ).unique(subset="CERT", keep="first")
-    n_assist = assist.group_by("CERT").len().rename({"len": "n_assist_events"})
+    n_ambig = ambig.group_by("CERT").len().rename({"len": "n_ambig_events"})
     bank = (per.join(closure, on="CERT", how="left").join(inst2, on="CERT", how="left")
-            .join(n_assist, on="CERT", how="left").with_columns(pl.col("n_assist_events").fill_null(0)))
+            .join(n_ambig, on="CERT", how="left").with_columns(pl.col("n_ambig_events").fill_null(0)))
     bank = bank.with_columns(
         pl.when(pl.col("fail_date").is_not_null()).then(pl.lit("failure"))
         .when(pl.col("last_rep") == data_last).then(pl.lit("still_reporting"))
@@ -241,7 +252,7 @@ def main():
     h("Non-merger change codes among other exits", 3)
     table(bank.filter(pl.col("exit_detail") == "other_code").group_by("change_code").len()
           .sort("len", descending=True).rename({"len": "banks"}), plain=("change_code",))
-    p(f"Banks with at least one assistance transaction: {bank.filter(pl.col('n_assist_events') > 0).height:,}")
+    p(f"Banks with at least one continued-reporting event: {bank.filter(pl.col('n_ambig_events') > 0).height:,}")
 
     # ------------------------------------------------ Write
     panel.write_parquet(CUR / "panel.parquet", compression="zstd", row_group_size=100_000, statistics=True)
