@@ -1,0 +1,29 @@
+feature,group,formula,rationale
+eq_ratio,Capital,EQ / ASSET x 100,Loss-absorbing capital; thin capital is the most direct failure signal.
+tier1_rbc,Capital,"RBC1AAJ (Tier 1 risk-based capital ratio, %)",Regulatory capital relative to risk-weighted assets.
+total_rbc,Capital,"RBCRWAJ (total risk-based capital ratio, %)",Broader regulatory capital cushion.
+d_eq_ratio_4q,Capital,eq_ratio - eq_ratio 4 quarters earlier,Capital erosion over the last year.
+eq_ratio_rel,Capital,eq_ratio - median eq_ratio of all banks in the same quarter,Peer-relative capital; removes macro and time effects.
+npl_ratio,Asset quality,NCLNLS / LNLSGR x 100,Share of loans that are non-performing; the classic leading indicator.
+reserve_ratio,Asset quality,LNATRES / LNLSGR x 100,Provisioning relative to the loan book.
+reserve_to_npl,Asset quality,LNATRES / NCLNLS,Coverage of bad loans by reserves.
+texas_ratio,Asset quality,NCLNLS / (EQ + LNATRES),Share of loss-absorbing resources already tied to bad loans (equity used instead of tangible equity).
+d_npl_4q,Asset quality,npl_ratio - npl_ratio 4 quarters earlier,Deterioration speed of loan quality.
+npl_ratio_rel,Asset quality,npl_ratio - median npl_ratio in the same quarter,Peer-relative loan quality.
+roa,Earnings,ROA (%),Profitability; losses deplete capital.
+nim,Earnings,"NIMY (net interest margin, %)",Core earnings power.
+roa_mean4,Earnings,mean ROA over last 4 reported quarters,"Smoothed profitability, less noisy than one quarter."
+roa_std4,Earnings,std ROA over last 4 reported quarters,Earnings volatility.
+roa_rel,Earnings,roa - median roa in the same quarter,Peer-relative profitability.
+efficiency_ratio,Earnings,NONIX / (INTINC - EINTEXP + NONII),Cost to income; high values mean little margin for losses.
+int_exp_ratio,Earnings,EINTEXP x (4 / quarter number) / LIAB x 100,Annualised funding cost; high cost signals risky funding.
+loan_to_dep,Liquidity,LNLSGR / DEP,Loans funded by non-deposit sources are riskier.
+bro_to_dep,Liquidity,BRO / DEP,"Brokered deposits are runnable, rate-sensitive funding."
+cash_ratio,Liquidity,CHBAL / ASSET x 100,Immediate liquidity buffer.
+securities_ratio,Liquidity,SC / ASSET x 100,Liquid asset buffer.
+dep_ratio,Liquidity,DEP / ASSET x 100,Reliance on deposit funding.
+asset_growth_yoy,Growth,ASSET / ASSET 4 quarters earlier - 1,Rapid growth often precedes credit problems.
+loan_growth_yoy,Growth,LNLSGR / LNLSGR 4 quarters earlier - 1,Aggressive lending is a known risk factor.
+dep_growth_yoy,Growth,DEP / DEP 4 quarters earlier - 1,Deposit outflows signal loss of confidence.
+log_asset,Size,ln(ASSET),Size affects diversification and resolution choices.
+size_pct,Size,rank of ASSET among all banks in the same quarter / number of banks,Peer-relative size.

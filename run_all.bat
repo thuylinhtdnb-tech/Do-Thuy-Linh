@@ -7,7 +7,7 @@ if not exist .venv (
 )
 call .venv\Scripts\activate.bat
 
-python -m pip install -q polars pyarrow requests tqdm matplotlib psutil
+python -m pip install -q polars pyarrow requests tqdm matplotlib psutil pandas scikit-learn pytest
 if errorlevel 1 goto :error
 
 python src\01_download.py
@@ -17,6 +17,12 @@ if errorlevel 1 goto :error
 python src\03_quality.py
 if errorlevel 1 goto :error
 python src\04_build_panel.py
+if errorlevel 1 goto :error
+python src\05_polars_vs_pandas.py --skip-scaling
+if errorlevel 1 goto :error
+python src\07_features.py
+if errorlevel 1 goto :error
+python -m pytest tests -q
 if errorlevel 1 goto :error
 
 echo.
