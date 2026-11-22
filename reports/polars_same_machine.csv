@@ -1,0 +1,2 @@
+engine,first_run_s,median_s,min_s,polars_version,threads,rows
+polars_lazy_same_machine,1.182,0.744,0.707,1.35.2,2,1682569
