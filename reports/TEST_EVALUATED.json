@@ -1,0 +1,6 @@
+{
+  "evaluated_at": "2026-11-23T22:18:17",
+  "chosen_model": "hgb_28_C",
+  "threshold": 0.010628523996873508,
+  "pr_auc_chosen": 0.5678890309680739
+}

@@ -1,0 +1,2 @@
+threshold,flagged_rows,flagged_share_pct,true_positive_rows,false_positive_rows,false_negative_rows,precision,recall_rows,failed_banks,failed_banks_flagged_at_least_once,share_failed_banks_flagged_pct,median_lead_days_of_first_flag
+0.010628523996873508,8646,1.985751098984387,1877,6769,261,0.21709461022438123,0.8779232927970065,546,527,96.52014652014653,297.0

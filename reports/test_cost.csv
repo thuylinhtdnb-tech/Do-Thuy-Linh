@@ -1,0 +1,4 @@
+policy,cost_million_usd
+model at frozen threshold,47502.164827353365
+flag nobody,98003.14983038341
+flag every bank-quarter,133340.76351946997
