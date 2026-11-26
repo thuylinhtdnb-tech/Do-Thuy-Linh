@@ -18,7 +18,7 @@ python src\03_quality.py
 if errorlevel 1 goto :error
 python src\04_build_panel.py
 if errorlevel 1 goto :error
-python src\05_polars_vs_pandas.py --skip-scaling
+python src\05_polars_vs_pandas.py
 if errorlevel 1 goto :error
 python src\07_features.py
 if errorlevel 1 goto :error

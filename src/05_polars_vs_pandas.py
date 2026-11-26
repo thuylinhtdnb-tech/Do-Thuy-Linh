@@ -247,7 +247,7 @@ def main():
 
     pl.DataFrame(res, infer_schema_length=None).write_csv(REP / "benchmark_engines.csv")
     pl.DataFrame(th, infer_schema_length=None).write_csv(REP / "thread_scaling.csv")
-    if mem:
+    if mem and not (a.skip_scaling and (REP / "memory_scaling.csv").exists()):
         pl.DataFrame(mem, infer_schema_length=None).write_csv(REP / "memory_scaling.csv")
 
     # 5. Doi chieu
@@ -279,7 +279,10 @@ def main():
             b, a0 = np.polyfit(x, [p[1] for p in pts], 1)
             t, _ = np.polyfit(x, [p[2] for p in pts], 1)
             lines.append(f"| {eng} | {len(pts)} | {b:,.0f} | {t:,.2f} | {(0.8 * ram_mb - a0) / b:,.1f} |")
-    (REP / "scaling_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if not (a.skip_scaling and (REP / "scaling_summary.md").exists()):
+        (REP / "scaling_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    else:
+        print("   (skip-scaling: giu nguyen scaling_summary.md hien co)")
     print("\n".join(lines))
 
     show = pl.DataFrame(res, infer_schema_length=None).select(
